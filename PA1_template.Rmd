@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(varhandle)
 library(ggplot2)
 
-df <- read.csv("C:/Users/Frantz/CloudStation/Documents/Coursera/ReproducibleResearch/activity.csv", header = TRUE)
+df <- read.csv("activity.csv", header = TRUE)
 df_Safe <- df
        
 #---------------------------------------WITHOUT NAs
