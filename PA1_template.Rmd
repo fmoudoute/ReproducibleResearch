@@ -1,0 +1,220 @@
+---
+title: "Reproducible Research - Assignment CP1"
+author: "Frantz Moudoute"
+date: "January 15, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Total Number of Steps Taken Per Day
+```{r echo = TRUE}
+# Loading Data 
+
+library(varhandle)
+library(ggplot2)
+
+df <- read.csv("C:/Users/Frantz/CloudStation/Documents/Coursera/ReproducibleResearch/activity.csv", header = TRUE)
+df_Safe <- df
+       
+#---------------------------------------WITHOUT NAs
+#Cleaning Missing points
+df <- na.omit(df)
+
+#Verifying Data Type
+str(df)
+
+#Converting data in incorrect format 
+df$date <- unfactor(df$date)
+df$date <- as.Date(as.character(df$date, format = "%d/%m/%y"))
+df$steps <- as.numeric(df$steps)
+df$interval <- as.numeric(df$interval)
+
+
+#Caculate the total number of step per day
+Data_Table_Step_per_Day <- aggregate(df$steps, list(df$date), sum)
+colnames(Data_Table_Step_per_Day) <- c("Date", "TotalSteps")
+print(head(Data_Table_Step_per_Day))
+
+```
+
+
+### Calculate the mean & Median of the number of total step per day
+```{r echo = TRUE}
+Mean_Total_Nber_Step_Per_Day <- mean(Data_Table_Step_per_Day$TotalSteps)
+print(paste("Mean Total Number of Steps Taken Per day : ", round(Mean_Total_Nber_Step_Per_Day, digits = 2), sep =""))
+Median_Total_Nber_Step_Per_Day <- median(Data_Table_Step_per_Day$TotalSteps)
+print(paste("Median Total Number of Steps Taken Per day : ", round(Median_Total_Nber_Step_Per_Day, digits = 2), sep =""))
+
+```
+
+
+###Histogram of total number of step taken each day 
+
+```{r echo = TRUE}
+ggplot(Data_Table_Step_per_Day, aes(x =Date, y = TotalSteps)) + 
+  geom_bar(stat = "identity", colour="Red") +
+  ggtitle("Total Steps Per Day") +
+  labs(x="Date", y="Total Steps Per Day")
+
+```
+
+
+### Average daily activity Pattern
+```{r echo = TRUE}
+Data_Table_Step_per_Interval <- aggregate(df$steps, list(df$interval), mean)
+colnames(Data_Table_Step_per_Interval) <- c("IntervalID", "TotalSteps")
+
+```
+
+
+### Plotting the Steps per Time Interval
+```{r echo = TRUE}
+ggplot(Data_Table_Step_per_Interval, aes(x =IntervalID, y = TotalSteps)) + 
+  geom_bar(stat = "identity", colour="Red") +
+  ggtitle("Avg Steps Per Time Interval") +
+  labs(x="Time interval", y="Avg Steps Per Day")
+
+```
+### Find the max average interval
+
+```{r echo = TRUE}
+MaxStep <- max(Data_Table_Step_per_Interval$TotalSteps)
+IDMAxstep <- which(Data_Table_Step_per_Interval[,2] == MaxStep)
+Interval_IDMAxstep <- Data_Table_Step_per_Interval$IntervalID[IDMAxstep]
+print(paste("In average the 5-minute interval with the maximum quantity of steps is Interval Number: ", round(Interval_IDMAxstep, digits = 0), sep =""))
+
+```
+### The following calculations includes NAs
+
+### Find how many NAs
+```{r echo = TRUE}
+Total_NA_Days <- sum(is.na(df_Safe$date))
+Total_NA_Steps <- sum(is.na(df_Safe$steps))
+Total_NA_interval <- sum(is.na(df_Safe$interval))
+ifelse(Total_NA_Days, paste(Total_NA_Days, " rows in the Day column have NA", sep = ""), paste("There are no NAs in the Day Column", sep = ""))
+ifelse(Total_NA_Steps, paste(Total_NA_Steps, " rows in the steps column have NA", sep = ""), paste("There are no NAs in the steps Column", sep = ""))
+ifelse(Total_NA_interval, paste(Total_NA_interval, " rows in the interval column have NA", sep = ""), paste("There are no NAs in the interval Column", sep = ""))
+
+df_Safe$date <- unfactor(df_Safe$date)
+df_Safe$date <- as.Date(as.character(df_Safe$date, format = "%d/%m/%y"))
+df_Safe$steps <- as.numeric(df_Safe$steps)
+df_Safe$interval <- as.numeric(df_Safe$interval)
+
+
+```
+###Replacing NAs by average of the relevant interval and creating new Dataset of same lengh
+```{r echo = TRUE}
+df_Safe[is.na(df_Safe)]<-"Missing"
+
+
+for(i in 1:nrow(df_Safe)){
+  if(df_Safe$steps[i] == "Missing"){
+    
+    #Find at which interval of the day the missing value happened
+    WhichINterval <- df_Safe$interval[i]
+    
+    #Find the average number of steps at that interval
+    Average_at_IntervalID <- which(Data_Table_Step_per_Interval[,1] == WhichINterval)
+    Average_at_interval <- Data_Table_Step_per_Interval$TotalSteps[Average_at_IntervalID]
+    
+    #Replacing NAs by the average at that interval
+    df_Safe$steps[i] <- round(Average_at_interval, digits = 2)
+      }
+  }
+#New Data set equal to the original dataset but with the missing data filled 
+New_df <- df_Safe
+New_df$steps <- as.numeric(New_df$steps)
+
+```
+###Calculating the total number of steps per day, mean and median.
+```{r echo = TRUE}
+#Caculate the total number of step per day
+Data_Table_Step_per_Day_Modified <- aggregate(New_df$steps, list(New_df$date), sum)
+colnames(Data_Table_Step_per_Day_Modified) <- c("Date", "TotalSteps")
+print(head(Data_Table_Step_per_Day_Modified))
+
+#Calculate the mean & Median of the number of total step per day
+Mean_Total_Nber_Step_Per_Day_Modified <- round(mean(Data_Table_Step_per_Day_Modified$TotalSteps), digits = 2)
+print(paste("Mean Total Number of Steps Taken Per day After replacing Missing Data : ", round(Mean_Total_Nber_Step_Per_Day_Modified, digits = 0), sep =""))
+Median_Total_Nber_Step_Per_Day_Modified <- round(median(Data_Table_Step_per_Day_Modified$TotalSteps), digits = 2)
+print(paste("Median Total Number of Steps Taken Per day After replacing Missing Data : ", round(Median_Total_Nber_Step_Per_Day_Modified, digits = 0), sep =""))
+
+
+```
+###Histogram of total number of step taken each day 
+```{r echo = TRUE}
+
+ggplot(Data_Table_Step_per_Day_Modified, aes(x =Date, y = TotalSteps)) + 
+  geom_bar(stat = "identity", colour="Red") +
+  ggtitle("Total Steps Per Day (With Missing Data)") +
+  labs(x="Date", y="Total Steps Per Day")
+
+```
+###Comparing data with and without NAs treatment
+```{r echo = TRUE}
+
+Col1 <- c("Variable","Mean","Median")
+Col2 <- c("Without Replacing NA", Mean_Total_Nber_Step_Per_Day, Median_Total_Nber_Step_Per_Day)
+Col3 <- c("Replacing NA", Mean_Total_Nber_Step_Per_Day_Modified, Median_Total_Nber_Step_Per_Day_Modified)
+Col4 <- c("Impact of Replacing NA", round(Mean_Total_Nber_Step_Per_Day_Modified-Mean_Total_Nber_Step_Per_Day, digits = 2) , round(Median_Total_Nber_Step_Per_Day_Modified-Median_Total_Nber_Step_Per_Day,digits = 2))
+TableResultat <- data.frame(Col1, Col2, Col3, Col4)
+header.true <- function(df) {
+  names(df) <- as.character(unlist(df[1,]))
+  df[-1,]
+}
+TableResultat <- header.true(TableResultat)
+
+print(TableResultat)
+```
+###Adding a column for Week Days and Week ends
+```{r echo = TRUE}
+New_df$WeekDay <- 0
+
+for(i in 1:nrow(New_df)){
+  
+  if(weekdays(New_df$date[i]) != "Saturday" || weekdays(New_df$date[i]) != "Sunday"){
+    New_df$WeekDay[i]<- "WeekDays"
+  }
+    if(weekdays(New_df$date[i]) == "Saturday" || weekdays(New_df$date[i]) == "Sunday"){
+      New_df$WeekDay[i]<- "Weekend"
+  }
+ 
+}
+
+```
+###Calculating the Steps per interval's ID for Week end and Week Days
+```{r echo = TRUE}
+New_Df_WeekDays <- subset(New_df, WeekDay == "WeekDays")
+New_Df_WeekEnds <- subset(New_df, WeekDay == "Weekend")
+
+Data_Table_Step_per_Interval_WeekDays <- aggregate(New_Df_WeekDays$steps, list(New_Df_WeekDays$interval), mean)
+Data_Table_Step_per_Interval_WeekEnd <- aggregate(New_Df_WeekEnds$steps, list(New_Df_WeekEnds$interval), mean)
+colnames(Data_Table_Step_per_Interval_WeekDays) <- c("IntervalID", "TotalSteps")
+colnames(Data_Table_Step_per_Interval_WeekEnd) <- c("IntervalID", "TotalSteps")
+
+
+```
+### Readying Plot panel of the 5-minte interval and the average number of steps taken - for weekend (WE) and Weekdays (WD)
+```{r echo = TRUE}
+Plot1 <- ggplot(Data_Table_Step_per_Interval_WeekDays, aes(x =IntervalID, y = TotalSteps)) + 
+  geom_bar(stat = "identity", colour="Red") +
+  ggtitle("Avg Steps/Interval (W-D)") +
+  labs(x="Time interval", y="Avg Steps / Week Day")
+
+Plot2 <- ggplot(Data_Table_Step_per_Interval_WeekEnd, aes(x =IntervalID, y = TotalSteps)) + 
+  geom_bar(stat = "identity", colour="Purple") +
+  ggtitle("Avg Steps/Interval (W-E)") +
+  labs(x="Time interval", y="Avg Steps/ Week-End")
+
+library("cowplot")
+ggdraw() +
+  draw_plot(Plot1, x = 0, y = .5, width = .5, height = .5) +
+  draw_plot(Plot2, x = .5, y = .5, width = .5, height = .5)
+
+
+```
+
+
